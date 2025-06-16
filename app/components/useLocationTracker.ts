@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import * as Location from 'expo-location';
 
-export default function useLocationTracker(isTracking: boolean) {
+export default function useLocationTracker(initialTracking: boolean) {
   const [locationData, setLocationData] = useState<Location.LocationObjectCoords[]>([]);
+  const [isTracking, setIsTracking] = useState(initialTracking);
 
   useEffect(() => {
     let subscription: Promise<Location.LocationSubscription> | undefined;
@@ -22,8 +23,6 @@ export default function useLocationTracker(isTracking: boolean) {
           }
         );
       });
-    } else {
-      setLocationData([]);
     }
 
     return () => {
@@ -31,5 +30,14 @@ export default function useLocationTracker(isTracking: boolean) {
     };
   }, [isTracking]);
 
-  return { locationData };
+  const resetLocationData = () => setLocationData([]);
+
+  const getCurrentLocation = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    const location = await Location.getCurrentPositionAsync({});
+    return location.coords;
+  };
+
+  return { locationData, resetLocationData, getCurrentLocation, isTracking, setIsTracking };
 }
